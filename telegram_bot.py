@@ -6,7 +6,7 @@ import random
 import sqlite3
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
-from telegram.error import TelegramError, Conflict
+from telegram.error import TelegramError
 from flask import Flask
 
 # Настройка логирования
@@ -15,20 +15,17 @@ logger = logging.getLogger(__name__)
 
 # Токен бота и данные админа
 TOKEN = os.getenv("TOKEN", "7996047867:AAG0diMuw5uhqGUVSYNcUPAst8hm2R_G47Q")
-ADMIN_USERNAME = "@Tyezik"  # Username админа (можно оставить как есть)
-ADMIN_CHAT_ID = os.getenv("1863110558")
-  # Числовой chat_id админа (опционально, задаётся через переменную окружения)
+ADMIN_USERNAME = "@Tyezik"  # Username админа
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "1863110558")  # Числовой chat_id админа (по умолчанию твой ID)
 
 # Список товаров
 PRODUCTS = [
     {"name": "Буст макс ранга", "price": "200 руб", "image": "https://imgur.com/aX1QifJ"},
-    {"name": "Буст мифик лиги", "price": "200 руб",
-     "image": "https://imgur.com/r6xHSuB"},
+    {"name": "Буст мифик лиги", "price": "200 руб", "image": "https://imgur.com/r6xHSuB"},
     {"name": "Буст кубки от 0 до 500 и от 500 до 1000 кубков", "price": "от 100 рублей до 150 рублей (цена договорная)",
      "image": "https://imgur.com/x9YixzM"},
     {"name": "Буст квестов", "price": "150 руб", "image": "https://imgur.com/qIwBeF5"},
-    {"name": "Предложить свою услугу", "price": "цену обговорим",
-     "image": "https://via.placeholder.com/150?text=Custom+Service"}
+    {"name": "Предложить свою услугу", "price": "цену обговорим", "image": "https://via.placeholder.com/150?text=Custom+Service"}
 ]
 
 # Логи и лиги
@@ -104,6 +101,7 @@ async def notify_admin(context, message):
         logger.error(f"Ошибка при отправке уведомления админу: {e} (chat_id: {ADMIN_CHAT_ID}, username: {ADMIN_USERNAME})")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /start от {update.effective_user.username or update.effective_user.id}")
     keyboard = [[InlineKeyboardButton("Список товаров", callback_data='catalog')],
                 [InlineKeyboardButton("Меню команд", callback_data='menu')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -118,9 +116,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
+    logger.info(f"Получен callback: {query.data} от {query.from_user.username or query.from_user.id}")
     await query.answer()
-    logger.info(f"Получен callback: {query.data}")
-
     try:
         if query.data == 'catalog':
             await query.message.reply_text("📋 Мои услуги:")
@@ -185,6 +182,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await notify_admin(context, f"Telegram API Error: {e}")
 
 async def start_rang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /start_rang от {update.effective_user.username or update.effective_user.id}")
     user_id = update.effective_user.id
     username = update.effective_user.username if update.effective_user.username else str(user_id)
     if context.user_data.get(f'played_{username}'):
@@ -200,6 +198,7 @@ async def start_rang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     logger.info(f"Игра 'Угадай лигу' начата для {username}. Загадана лига: {context.user_data['correct_league']}")
 
 async def handle_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получен ответ на игру от {update.effective_user.username or update.effective_user.id}: {update.message.text}")
     if context.user_data.get('game_active'):
         user_id = update.effective_user.id
         username = update.effective_user.username if update.effective_user.username else str(user_id)
@@ -231,6 +230,7 @@ async def handle_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 # Новая команда для уведомления о платеже
 async def paid(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /paid от {update.effective_user.username or update.effective_user.id}")
     user_id = update.effective_user.id
     username = update.effective_user.username if update.effective_user.username else str(user_id)
     if context.args:
@@ -243,6 +243,7 @@ async def paid(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # Интерактивные функции
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /leaderboard от {update.effective_user.username or update.effective_user.id}")
     conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
     c.execute("SELECT username, score FROM leaderboard ORDER BY score DESC LIMIT 5")
@@ -256,6 +257,7 @@ async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     logger.info("Команда /leaderboard выполнена")
 
 async def hint(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /hint от {update.effective_user.username or update.effective_user.id}")
     if context.user_data.get('game_active'):
         user_id = update.effective_user.id
         username = update.effective_user.username if update.effective_user.username else str(user_id)
@@ -269,6 +271,7 @@ async def hint(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("Сначала начни игру с /start_rang!")
 
 async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /settings от {update.effective_user.username or update.effective_user.id}")
     keyboard = [[InlineKeyboardButton("Весёлый стиль", callback_data='style_fun'),
                  InlineKeyboardButton("Формальный стиль", callback_data='style_formal')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -277,6 +280,7 @@ async def settings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
+    logger.info(f"Получен callback настройки от {query.from_user.username or query.from_user.id}")
     await query.answer()
     style = query.data.split('_')[1]
     user_id = query.effective_user.id
@@ -287,6 +291,7 @@ async def settings_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 # Монетизация
 async def promo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /promo от {update.effective_user.username or update.effective_user.id}")
     chance = random.random()
     if chance < 0.1:
         discount = "15%"
@@ -302,6 +307,7 @@ async def promo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("Команда /promo выполнена")
 
 async def invite(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /invite от {update.effective_user.username or update.effective_user.id}")
     user_id = update.effective_user.id
     username = update.effective_user.username if update.effective_user.username else str(user_id)
     referral_link = f"https://t.me/{context.bot.username}?start={username}"
@@ -311,6 +317,7 @@ async def invite(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # Интеграции
 async def feedback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /feedback от {update.effective_user.username or update.effective_user.id}")
     if context.args:
         feedback_text = " ".join(context.args)
         await notify_admin(context, f"Отзыв от {update.effective_user.username}: {feedback_text}")
@@ -320,6 +327,7 @@ async def feedback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("Команда /feedback выполнена")
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /subscribe от {update.effective_user.username or update.effective_user.id}")
     user_id = update.effective_user.id
     username = update.effective_user.username if update.effective_user.username else str(user_id)
     update_user(context, user_id, username, subscribe=True)
@@ -327,6 +335,7 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"Подписка активирована для {username}")
 
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /unsubscribe от {update.effective_user.username or update.effective_user.id}")
     user_id = update.effective_user.id
     username = update.effective_user.username if update.effective_user.username else str(user_id)
     conn = sqlite3.connect('bot_data.db')
@@ -339,6 +348,7 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 # Игровые улучшения
 async def guess_cups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /guess_cups от {update.effective_user.username or update.effective_user.id}")
     if context.user_data.get(f'played_cups_{update.effective_user.username or update.effective_user.id}'):
         await update.message.reply_text("Извините, вы уже пытали удачу в этой игре!")
         return
@@ -349,6 +359,7 @@ async def guess_cups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     logger.info(f"Игра 'Угадай кубки' начата. Загаданы кубки: {correct_cups}")
 
 async def handle_cups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получен ответ на игру кубков от {update.effective_user.username or update.effective_user.id}: {update.message.text}")
     if context.user_data.get('game_cups_active'):
         try:
             user_guess = int(update.message.text)
@@ -376,6 +387,7 @@ async def handle_cups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_text("Сначала начни игру с /guess_cups!")
 
 async def achievements(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /achievements от {update.effective_user.username or update.effective_user.id}")
     username = update.effective_user.username if update.effective_user.username else str(update.effective_user.id)
     conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
@@ -390,6 +402,7 @@ async def achievements(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     logger.info(f"Команда /achievements выполнена для {username}")
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info(f"Получена команда /stats от {update.effective_user.username or update.effective_user.id}")
     username = update.effective_user.username if update.effective_user.username else str(update.effective_user.id)
     conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
@@ -415,7 +428,7 @@ async def send_error_to_admin(context, error_message):
     except TelegramError as e:
         logger.error(f"Ошибка при отправке уведомления об ошибке: {e} (chat_id: {ADMIN_CHAT_ID}, username: {ADMIN_USERNAME})")
 
-async def check_services(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def check_services(context: ContextTypes.DEFAULT_TYPE) -> None:
     subscribed_users = []
     conn = sqlite3.connect('bot_data.db')
     c = conn.cursor()
@@ -433,6 +446,8 @@ async def main() -> None:
     try:
         init_db()
         application = Application.builder().token(TOKEN).build()
+
+        # Регистрация обработчиков
         application.add_handler(CommandHandler("start", start))
         application.add_handler(CommandHandler("start_rang", start_rang))
         application.add_handler(CommandHandler("leaderboard", leaderboard))
@@ -457,22 +472,23 @@ async def main() -> None:
             logger.info("Получен сигнал завершения, останавливаем бот...")
             asyncio.create_task(application.stop())
 
-        signal.signal(signal.SIGTERM, stop_bot)  # SIGTERM используется Render для остановки
+        signal.signal(signal.SIGTERM, stop_bot)
 
+        # Инициализация и запуск
         await application.initialize()
         await application.start()
-        await application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
         logger.info("Бот запущен")
 
-        port = int(os.getenv("PORT", 10000))
-        asyncio.create_task(asyncio.to_thread(lambda: app.run(host='0.0.0.0', port=port)))
-        asyncio.create_task(check_services(None, application))
+        # Запуск периодической проверки
+        application.job_queue.run_repeating(check_services, interval=86400, first=1)
 
-        await application.run_polling()
+        # Запуск polling
+        await application.run_polling(allowed_updates=Update.ALL_TYPES)
 
     except Exception as e:
         logger.error(f"Ошибка при запуске бота: {e}")
         await send_error_to_admin(application, f"Startup Error: {e}")
+        await application.stop()
 
 if __name__ == "__main__":
     asyncio.run(main())
