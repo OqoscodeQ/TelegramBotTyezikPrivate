@@ -12,7 +12,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Токен бота
-TOKEN = os.getenv("TOKEN", "7996047867:AAG0diMuw5uhqGUVSYNcUPAst8hm2R_G47Q")
+TOKEN = os.getenv("TOKEN", "7784851665:AAH-AkFYh1tgcYxG9ti4DZJvogAseC5hVAM")
 
 # Список товаров с прямыми ссылками на изображения
 PRODUCTS = [
@@ -35,9 +35,9 @@ COMMENTS = {
         "Потрясающе! Ты попал в цель! 😎"
     ],
     "lose": [
-        "Увы, не угадал! 😂 Попробуй ещё раз в новой игре!",
-        "Почти получилось! 😅 Давай в следующий раз!",
-        "Не повезло на этот раз! Но ты молодец! Начни новую игру!"
+        "Увы, не угадал! 😂 К сожалению, у тебя была только одна попытка!",
+        "Почти получилось! 😅 Но у тебя была только одна попытка!",
+        "Не повезло на этот раз! У тебя была только одна попытка!"
     ]
 }
 
@@ -112,22 +112,29 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def start_rang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик команды /start_rang для запуска игры"""
-    if context.user_data.get('game_active'):
-        await update.message.reply_text(
-            "Извините, но вы уже пытали удачу! Начать новую игру можно только после завершения текущей.")
+    user_id = update.effective_user.id
+    username = update.effective_user.username if update.effective_user.username else str(user_id)
+
+    # Проверка, играл ли пользователь
+    if context.user_data.get(f'played_{username}'):
+        await update.message.reply_text("Извините, но вы уже пытали удачу! У вас была только одна попытка.")
         return
+
     context.user_data['correct_league'] = random.choice(LEAGUES)  # Случайная лига
     await update.message.reply_text(
         "Привет давай сыграем в игру угадай лигу, ты должен угадать лигу которую я загадаю и получишь скидку, "
-        "напиши свою догадку и получи скидку! (Варианты: Бронза, Серебро, Золото, Алмаз, Мифик)"
+        "напиши свою догадку и получи скидку! (Варианты: Бронза, Серебро, Золото, Алмаз, Мифик) "
+        "У тебя только одна попытка!"
     )
     context.user_data['game_active'] = True
-    logger.info(f"Игра 'Угадай лигу' начата. Загадана лига: {context.user_data['correct_league']}")
+    logger.info(f"Игра 'Угадай лигу' начата для {username}. Загадана лига: {context.user_data['correct_league']}")
 
 
 async def handle_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик текста для игры 'Угадай лигу'"""
     if context.user_data.get('game_active'):
+        user_id = update.effective_user.id
+        username = update.effective_user.username if update.effective_user.username else str(user_id)
         user_guess = update.message.text.strip().capitalize()
         correct_league = context.user_data['correct_league']
         result = user_guess == correct_league
@@ -147,12 +154,12 @@ async def handle_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         await update.message.reply_text(response)
 
-        # Сбрасываем флаг игры
+        # Отмечаем, что пользователь сыграл
         context.user_data['game_active'] = False
-        logger.info(f"Игра 'Угадай лигу' завершена. Угадал: {result}, Токен: {discount_message}")
+        context.user_data[f'played_{username}'] = True
+        logger.info(f"Игра 'Угадай лигу' завершена для {username}. Угадал: {result}, Токен: {discount_message}")
     else:
-        await update.message.reply_text(
-            "Извините, но вы уже пытали удачу! Начать новую игру можно с команды /start_rang.")
+        await update.message.reply_text("Извините, но вы уже пытали удачу! У вас была только одна попытка.")
 
 
 async def main() -> None:
