@@ -445,7 +445,7 @@ async def check_services(context: ContextTypes.DEFAULT_TYPE) -> None:
 async def main() -> None:
     try:
         init_db()
-        application = Application.builder().token(TOKEN).build()
+        application = Application.builder().token(TOKEN).job_queue=True).build()  # Активация JobQueue
 
         # Регистрация обработчиков
         application.add_handler(CommandHandler("start", start))
