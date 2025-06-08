@@ -445,7 +445,7 @@ async def check_services(context: ContextTypes.DEFAULT_TYPE) -> None:
 async def main() -> None:
     try:
         init_db()
-        application = Application.builder().token(TOKEN).job_queue=True).build()  # Активация JobQueue
+        application = Application.builder().token(TOKEN).build(job_queue=True)  # Исправлено: job_queue как параметр
 
         # Регистрация обработчиков
         application.add_handler(CommandHandler("start", start))
@@ -487,8 +487,13 @@ async def main() -> None:
 
     except Exception as e:
         logger.error(f"Ошибка при запуске бота: {e}")
-        await send_error_to_admin(application, f"Startup Error: {e}")
-        await application.stop()
+        # Проверка, что application инициализирован перед отправкой ошибки
+        if 'application' in locals():
+            await send_error_to_admin(application, f"Startup Error: {e}")
+        else:
+            logger.error("Application не инициализирован, уведомление админу не отправлено")
+        if 'application' in locals():
+            await application.stop()
 
 if __name__ == "__main__":
     asyncio.run(main())
