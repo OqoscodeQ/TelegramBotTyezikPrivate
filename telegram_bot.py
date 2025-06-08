@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 # Токен бота и данные админа
 TOKEN = os.getenv("TOKEN", "7996047867:AAG0diMuw5uhqGUVSYNcUPAst8hm2R_G47Q")
 ADMIN_USERNAME = "@Tyezik"  # Username админа (можно оставить как есть)
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # Числовой chat_id админа (опционально, задаётся через переменную окружения)
+ADMIN_CHAT_ID = os.getenv("1863110558")
+  # Числовой chat_id админа (опционально, задаётся через переменную окружения)
 
 # Список товаров
 PRODUCTS = [
