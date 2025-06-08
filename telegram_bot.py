@@ -98,7 +98,8 @@ async def notify_admin(context, message):
         logger.error(f"Ошибка при отправке уведомления админу: {e}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    keyboard = [[InlineKeyboardButton("Список товаров", callback_data='catalog')]]
+    keyboard = [[InlineKeyboardButton("Список товаров", callback_data='catalog')],
+                [InlineKeyboardButton("Меню команд", callback_data='menu')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     welcome_message = (
         "Привет! Ты попал в моего бота! 😎\n"
@@ -145,12 +146,32 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     "Хочешь выиграть скидку? Введи /start_rang и сыграй в 'Угадай лигу'!"
                 )
                 await query.message.reply_text(requisites_message)
-                # Уведомление админу о намерении покупки
                 await notify_admin(context, f"🔔 Новый заказ! Пользователь {username} выбрал: {product['name']} - {product['price']}. Проверь!")
                 logger.info(f"Уведомление отправлено админу о выборе {product['name']} пользователем {username}")
             else:
                 await query.message.reply_text("Ошибка: выбран некорректный товар.")
                 logger.error(f"Некорректный индекс продукта: {product_index}")
+
+        elif query.data == 'menu':
+            keyboard = [
+                [InlineKeyboardButton("/start - Начать", callback_data='cmd_start')],
+                [InlineKeyboardButton("/start_rang - Угадай лигу", callback_data='cmd_start_rang')],
+                [InlineKeyboardButton("/leaderboard - Топ игроков", callback_data='cmd_leaderboard')],
+                [InlineKeyboardButton("/hint - Подсказка", callback_data='cmd_hint')],
+                [InlineKeyboardButton("/settings - Настройки", callback_data='cmd_settings')],
+                [InlineKeyboardButton("/promo - Акции", callback_data='cmd_promo')],
+                [InlineKeyboardButton("/invite - Пригласи друга", callback_data='cmd_invite')],
+                [InlineKeyboardButton("/feedback - Отзыв", callback_data='cmd_feedback')],
+                [InlineKeyboardButton("/subscribe - Подписка", callback_data='cmd_subscribe')],
+                [InlineKeyboardButton("/unsubscribe - Отписка", callback_data='cmd_unsubscribe')],
+                [InlineKeyboardButton("/guess_cups - Угадай кубки", callback_data='cmd_guess_cups')],
+                [InlineKeyboardButton("/achievements - Достижения", callback_data='cmd_achievements')],
+                [InlineKeyboardButton("/stats - Статистика", callback_data='cmd_stats')],
+                [InlineKeyboardButton("/paid - Уведомить о платеже", callback_data='cmd_paid')]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.message.reply_text("📋 Меню команд:", reply_markup=reply_markup)
+            logger.info("Меню команд показано")
 
     except TelegramError as e:
         logger.error(f"Ошибка Telegram API: {e}")
@@ -233,7 +254,10 @@ async def hint(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id = update.effective_user.id
         username = update.effective_user.username if update.effective_user.username else str(user_id)
         correct_league = context.user_data['correct_league']
-        hint = f"Подсказка: лига начинается на '{correct_league[0]}'. Стоимость подсказки: 50 руб (оплати через https://funpay.com/users/15119175)!"
+        # Бесплатная подсказка с двумя случайными буквами
+        first_letter = correct_league[0]
+        second_letter = random.choice([l for l in correct_league if l != first_letter])
+        hint = f"Подсказка: лига начинается на '{first_letter}' или '{second_letter}'"
         await update.message.reply_text(hint)
         logger.info(f"Подсказка выдана для {username}")
     else:
