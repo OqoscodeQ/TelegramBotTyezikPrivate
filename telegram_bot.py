@@ -13,9 +13,10 @@ from flask import Flask
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Токен бота и твой username для уведомлений
+# Токен бота и данные админа
 TOKEN = os.getenv("TOKEN", "7996047867:AAG0diMuw5uhqGUVSYNcUPAst8hm2R_G47Q")
-ADMIN_USERNAME = "@Tyezik"  # Твой username для уведомлений
+ADMIN_USERNAME = "@Tyezik"  # Username админа (можно оставить как есть)
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # Числовой chat_id админа (опционально, задаётся через переменную окружения)
 
 # Список товаров
 PRODUCTS = [
@@ -93,9 +94,13 @@ def add_achievement(context, username, achievement):
 # Уведомление администратору
 async def notify_admin(context, message):
     try:
-        await context.bot.send_message(chat_id=ADMIN_USERNAME, text=message)
+        if ADMIN_CHAT_ID:
+            await context.bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=message)
+        else:
+            await context.bot.send_message(chat_id=ADMIN_USERNAME, text=message)
+        logger.info(f"Уведомление админу отправлено: {message}")
     except TelegramError as e:
-        logger.error(f"Ошибка при отправке уведомления админу: {e}")
+        logger.error(f"Ошибка при отправке уведомления админу: {e} (chat_id: {ADMIN_CHAT_ID}, username: {ADMIN_USERNAME})")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [[InlineKeyboardButton("Список товаров", callback_data='catalog')],
@@ -254,7 +259,6 @@ async def hint(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id = update.effective_user.id
         username = update.effective_user.username if update.effective_user.username else str(user_id)
         correct_league = context.user_data['correct_league']
-        # Бесплатная подсказка с двумя случайными буквами
         first_letter = correct_league[0]
         second_letter = random.choice([l for l in correct_league if l != first_letter])
         hint = f"Подсказка: лига начинается на '{first_letter}' или '{second_letter}'"
@@ -308,7 +312,7 @@ async def invite(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def feedback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if context.args:
         feedback_text = " ".join(context.args)
-        await context.bot.send_message(chat_id=ADMIN_USERNAME, text=f"Отзыв от {update.effective_user.username}: {feedback_text}")
+        await notify_admin(context, f"Отзыв от {update.effective_user.username}: {feedback_text}")
         await update.message.reply_text("Спасибо за отзыв! Он отправлен администратору.")
     else:
         await update.message.reply_text("Пожалуйста, введи отзыв после /feedback (например, /feedback Отличный бот!).")
@@ -402,9 +406,13 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # Технические улучшения
 async def send_error_to_admin(context, error_message):
     try:
-        await context.bot.send_message(chat_id=ADMIN_USERNAME, text=f"Ошибка: {error_message}")
+        if ADMIN_CHAT_ID:
+            await context.bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=error_message)
+        else:
+            await context.bot.send_message(chat_id=ADMIN_USERNAME, text=error_message)
+        logger.info(f"Уведомление об ошибке отправлено админу: {error_message}")
     except TelegramError as e:
-        logger.error(f"Ошибка при отправке уведомления об ошибке: {e}")
+        logger.error(f"Ошибка при отправке уведомления об ошибке: {e} (chat_id: {ADMIN_CHAT_ID}, username: {ADMIN_USERNAME})")
 
 async def check_services(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     subscribed_users = []
@@ -442,6 +450,14 @@ async def main() -> None:
         application.add_handler(CallbackQueryHandler(settings_callback, pattern='^style_'))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_guess))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND & filters.Regex(r'^\d+$'), handle_cups))
+
+        # Обработчик сигнала завершения
+        def stop_bot(signum, frame):
+            logger.info("Получен сигнал завершения, останавливаем бот...")
+            asyncio.create_task(application.stop())
+
+        signal.signal(signal.SIGTERM, stop_bot)  # SIGTERM используется Render для остановки
+
         await application.initialize()
         await application.start()
         await application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
@@ -451,14 +467,8 @@ async def main() -> None:
         asyncio.create_task(asyncio.to_thread(lambda: app.run(host='0.0.0.0', port=port)))
         asyncio.create_task(check_services(None, application))
 
-        try:
-            while True:
-                await asyncio.sleep(3600)
-        except KeyboardInterrupt:
-            logger.info("Получен сигнал завершения, останавливаем бот...")
-            await application.updater.stop()
-            await application.stop()
-            await application.shutdown()
+        await application.run_polling()
+
     except Exception as e:
         logger.error(f"Ошибка при запуске бота: {e}")
         await send_error_to_admin(application, f"Startup Error: {e}")
