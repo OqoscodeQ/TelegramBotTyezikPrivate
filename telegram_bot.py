@@ -19,12 +19,14 @@ ADMIN_USERNAME = "@Tyezik"  # Твой username для уведомлений
 
 # Список товаров
 PRODUCTS = [
-    {"name": "Буст макс ранга", "price": "200 руб", "image": "https://i.imgur.com/5KqL9vZ.jpg"},
-    {"name": "Буст мифик лиги", "price": "200 руб", "image": "https://i.imgur.com/5KqL9vZ.jpg"},
+    {"name": "Буст макс ранга", "price": "200 руб", "image": "https://imgur.com/aX1QifJ"},
+    {"name": "Буст мифик лиги", "price": "200 руб",
+     "image": "https://imgur.com/r6xHSuB"},
     {"name": "Буст кубки от 0 до 500 и от 500 до 1000 кубков", "price": "от 100 рублей до 150 рублей (цена договорная)",
-     "image": "https://i.imgur.com/9vJ1R2L.jpg"},
-    {"name": "Буст квестов", "price": "150 руб", "image": "https://i.imgur.com/8n7mY4h.jpg"},
-    {"name": "Предложить свою услугу", "price": "цену обговорим", "image": "https://i.imgur.com/x7p3Z0P.jpg"}
+     "image": "https://imgur.com/x9YixzM"},
+    {"name": "Буст квестов", "price": "150 руб", "image": "https://imgur.com/qIwBeF5"},
+    {"name": "Предложить свою услугу", "price": "цену обговорим",
+     "image": "https://via.placeholder.com/150?text=Custom+Service"}
 ]
 
 # Логи и лиги
