@@ -6,6 +6,7 @@ import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 from telegram.error import TelegramError, Conflict
+from flask import Flask
 
 # Настройка логирования
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -40,6 +41,14 @@ COMMENTS = {
         "Не повезло на этот раз! У тебя была только одна попытка!"
     ]
 }
+
+# Настройка Flask
+app = Flask(__name__)
+
+
+@app.route('/')
+def health_check():
+    return "Bot is running", 200
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -174,6 +183,10 @@ async def main() -> None:
         await application.start()
         await application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
         logger.info("Бот запущен")
+
+        # Запуск Flask-сервера для Render
+        port = int(os.getenv("PORT", 10000))  # Render предоставляет порт через переменную PORT
+        asyncio.create_task(asyncio.to_thread(lambda: app.run(host='0.0.0.0', port=port)))
 
         try:
             while True:
