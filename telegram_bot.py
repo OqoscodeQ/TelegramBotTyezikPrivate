@@ -1,8 +1,7 @@
 import logging
 import os
 import asyncio
-import random
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 from telegram.error import TelegramError
 from flask import Flask, request
@@ -12,11 +11,11 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Токен бота и данные админа
-TOKEN = os.getenv("TOKEN", "7996047867:AAG0diMuw5uhqGUVSYNcUPAst8hm2R_G47Q")
-ADMIN_USERNAME = "@Tyezik"
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "1863110558")
+TOKEN = os.getenv("TOKEN", "7833966397:AAEwA91PbqzuYberVdNwF2bATaWsZD_055U")  # Новый токен
+ADMIN_USERNAME = "@oqoscode"  # Твой профиль
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # Будет взято из переменной окружения, если задано
 
-# Список товаров, лиги, цвета, шрифты (как в предыдущем коде)
+# Список товаров, лиги, цвета, шрифты
 PRODUCTS = [
     {"name": "Буст макс ранга", "price": "200 руб", "image": "https://imgur.com/aX1QifJ"},
     {"name": "Буст мифик лиги", "price": "200 руб", "image": "https://imgur.com/r6xHSuB"},
@@ -58,14 +57,14 @@ async def notify_admin(context, message):
     try:
         if ADMIN_CHAT_ID:
             await context.bot.send_message(chat_id=int(ADMIN_CHAT_ID), text=message)
-        else:
+        elif ADMIN_USERNAME:
             await context.bot.send_message(chat_id=ADMIN_USERNAME, text=message)
         logger.info(f"Уведомление админу отправлено: {message}")
     except TelegramError as e:
         logger.error(f"Ошибка при отправке уведомления админу: {e}")
 
 
-# Обработчики (как в предыдущем коде)
+# Обработчики
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"Получена команда /start от {update.effective_user.id}")
     keyboard = [
@@ -109,7 +108,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 username = user.id
                 requisites_message = apply_style(
                     f"Вы выбрали: {product['name']} - {product['price']}\n\nРеквизиты:\n"
-                    f"{ADMIN_USERNAME} (пишите только по делу, прошу не спамить, могу не отвечать)\n"
+                    f"@oqoscode (пишите только по делу, прошу не спамить, могу не отвечать)\n"
                     "Ссылка на FunPay: https://funpay.com/users/15119175\n"
                     "Ссылка на https://www.donationalerts.com/r/makarovbyshop\n"
                     "(прошу отправляйте точную сумму и в комментарий поясните за что платите, "
@@ -215,14 +214,12 @@ async def handle_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def settings(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"Получена команда /settings от {query.from_user.id}")
-    # Создание кнопок для цветов
     color_buttons = []
     for color_key in COLORS.keys():
         color_buttons.append(
             InlineKeyboardButton(f"{COLORS[color_key]} {color_key}", callback_data=f"color_{color_key}"))
     color_rows = [color_buttons[i:i + 2] for i in range(0, len(color_buttons), 2)]
 
-    # Создание кнопок для шрифтов
     font_buttons = []
     for font_key in FONTS.keys():
         font_buttons.append(InlineKeyboardButton(f"Шрифт: {font_key}", callback_data=f"font_{font_key}"))
@@ -239,7 +236,6 @@ async def settings(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info("Меню настроек показано")
 
 
-# Функция для применения стиля
 def apply_style(text, user_data, user_id):
     color = user_data.get(f'color_{user_id}', 'red')
     font_key = user_data.get(f'font_{user_id}', 'normal')
@@ -272,10 +268,14 @@ async def webhook():
 
 # Запуск бота
 if __name__ == "__main__":
-    # Установка вебхука (замени на свой URL, например, https://yourdomain.com/webhook)
-    WEBHOOK_URL = "https://yourdomain.com/webhook"  # Укажи свой публичный URL
+    # Установка вебхука с URL из переменной окружения
+    WEBHOOK_URL = os.getenv("https://telegrambottyezikprivate.onrender.com/webhook")
+    if not WEBHOOK_URL:
+        logger.error("WEBHOOK_URL не задан в переменных окружения!")
+        raise ValueError("Необходимо задать WEBHOOK_URL в переменных окружения.")
+    logger.info(f"Установка вебхука: {WEBHOOK_URL}")
     asyncio.run(application.bot.set_webhook(url=WEBHOOK_URL))
 
-    # Запуск Flask с указанием порта
-    port = int(os.getenv("PORT", 8443))  # Используй порт, заданный средой (например, 8443 для Render)
+    # Запуск Flask с динамическим портом
+    port = int(os.getenv("PORT", 10000))  # Render задаёт PORT автоматически
     app.run(host='0.0.0.0', port=port)
