@@ -252,6 +252,7 @@ app = Flask(__name__)
 
 # Инициализация бота
 application = Application.builder().token(TOKEN).build()
+application.initialize()  # Добавляем инициализацию приложения
 
 # Регистрация обработчиков
 application.add_handler(CommandHandler("start", start))
@@ -262,8 +263,12 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_g
 # Обработчик вебхука
 @app.route('/webhook', methods=['POST'])
 async def webhook():
-    update = Update.de_json(request.get_json(), application.bot)
+    logger.info("Получен POST-запрос на /webhook")
+    data = request.get_json()
+    logger.info(f"Данные от Telegram: {data}")
+    update = Update.de_json(data, application.bot)
     await application.process_update(update)
+    logger.info("Обработка обновления завершена")
     return 'OK', 200
 
 
