@@ -5,6 +5,7 @@ import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 from telegram.error import TelegramError
+from flask import Flask, request
 
 # Настройка логирования
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -12,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 # Токен бота и данные админа
 TOKEN = os.getenv("TOKEN", "7996047867:AAG0diMuw5uhqGUVSYNcUPAst8hm2R_G47Q")
-ADMIN_USERNAME = "@Tyezik"  # Username админа
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "1863110558")  # Числовой chat_id админа
+ADMIN_USERNAME = "@Tyezik"
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "1863110558")
 
-# Список товаров
+# Список товаров, лиги, цвета, шрифты (как в предыдущем коде)
 PRODUCTS = [
     {"name": "Буст макс ранга", "price": "200 руб", "image": "https://imgur.com/aX1QifJ"},
     {"name": "Буст мифик лиги", "price": "200 руб", "image": "https://imgur.com/r6xHSuB"},
@@ -25,7 +26,6 @@ PRODUCTS = [
     {"name": "Предложить свою услугу", "price": "цену обговорим", "image": "https://via.placeholder.com/150"}
 ]
 
-# Логи и лиги
 LEAGUES = ["Бронза", "Серебро", "Золото", "Алмаз", "Мифик"]
 COMMENTS = {
     "win": ["Отличная интуиция! 🎉 Ты угадал лигу!", "Ты мастер предсказаний! 💪", "Потрясающе! Ты попал в цель! 😎"],
@@ -34,7 +34,6 @@ COMMENTS = {
              "Не повезло на этот раз! У тебя была только одна попытка!"]
 }
 
-# Цвета (имитация через эмодзи)
 COLORS = {
     "red": "🔴",
     "blue": "🔵",
@@ -44,14 +43,13 @@ COLORS = {
     "orange": "🟠"
 }
 
-# Шрифты
 FONTS = {
     "normal": lambda x: x,
     "bold": lambda x: f"<b>{x}</b>",
     "italic": lambda x: f"<i>{x}</i>",
     "monospace": lambda x: f"<code>{x}</code>",
     "emoji": lambda x: f"{x} ✨",
-    "fancy": lambda x: "".join(chr(ord(c) + 0x1D400) if c.isalpha() else c for c in x)  # Имитация шрифта
+    "fancy": lambda x: "".join(chr(ord(c) + 0x1D400) if c.isalpha() else c for c in x)
 }
 
 
@@ -64,10 +62,10 @@ async def notify_admin(context, message):
             await context.bot.send_message(chat_id=ADMIN_USERNAME, text=message)
         logger.info(f"Уведомление админу отправлено: {message}")
     except TelegramError as e:
-        logger.error(
-            f"Ошибка при отправке уведомления админу: {e} (chat_id: {ADMIN_CHAT_ID}, username: {ADMIN_USERNAME})")
+        logger.error(f"Ошибка при отправке уведомления админу: {e}")
 
 
+# Обработчики (как в предыдущем коде)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"Получена команда /start от {update.effective_user.id}")
     keyboard = [
@@ -108,7 +106,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             if 0 <= product_index < len(PRODUCTS):
                 product = PRODUCTS[product_index]
                 user = query.from_user
-                username = user.id  # Используем user_id
+                username = user.id
                 requisites_message = apply_style(
                     f"Вы выбрали: {product['name']} - {product['price']}\n\nРеквизиты:\n"
                     f"{ADMIN_USERNAME} (пишите только по делу, прошу не спамить, могу не отвечать)\n"
@@ -136,7 +134,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif query.data.startswith('color_'):
             color = query.data.split('_')[1]
             user_id = query.from_user.id
-            context.user_data[f'color_{user_id}'] = color  # Сохраняем по user_id
+            context.user_data[f'color_{user_id}'] = color
             logger.info(f"Сохранён цвет {color} для user_id {user_id}")
             await query.message.reply_text(apply_style("Цвет интерфейса изменён!", context.user_data, user_id),
                                            parse_mode='HTML')
@@ -144,7 +142,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         elif query.data.startswith('font_'):
             font = query.data.split('_')[1]
             user_id = query.from_user.id
-            context.user_data[f'font_{user_id}'] = font  # Сохраняем по user_id
+            context.user_data[f'font_{user_id}'] = font
             logger.info(f"Сохранён шрифт {font} для user_id {user_id}")
             await query.message.reply_text(apply_style("Шрифт интерфейса изменён!", context.user_data, user_id),
                                            parse_mode='HTML')
@@ -252,24 +250,32 @@ def apply_style(text, user_data, user_id):
     return styled_text
 
 
-# Запуск
-def main():
-    application = Application.builder().token(TOKEN).build()
+# Настройка Flask
+app = Flask(__name__)
 
-    # Регистрация обработчиков
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(button_callback))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_guess))
+# Инициализация бота
+application = Application.builder().token(TOKEN).build()
 
-    # Запуск приложения
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+# Регистрация обработчиков
+application.add_handler(CommandHandler("start", start))
+application.add_handler(CallbackQueryHandler(button_callback))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_guess))
 
 
+# Обработчик вебхука
+@app.route('/webhook', methods=['POST'])
+async def webhook():
+    update = Update.de_json(request.get_json(), application.bot)
+    await application.process_update(update)
+    return 'OK', 200
+
+
+# Запуск бота
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        logger.error(f"Ошибка при запуске бота: {e}")
-        # Уведомление админа только если application создан
-        if 'application' in locals():
-            asyncio.run(notify_admin(application, f"Startup Error: {e}"))
+    # Установка вебхука (замени на свой URL, например, https://yourdomain.com/webhook)
+    WEBHOOK_URL = "https://yourdomain.com/webhook"  # Укажи свой публичный URL
+    asyncio.run(application.bot.set_webhook(url=WEBHOOK_URL))
+
+    # Запуск Flask с указанием порта
+    port = int(os.getenv("PORT", 8443))  # Используй порт, заданный средой (например, 8443 для Render)
+    app.run(host='0.0.0.0', port=port)
