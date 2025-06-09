@@ -12,9 +12,9 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Токен бота и данные админа
-TOKEN = os.getenv("TOKEN", "7833966397:AAEwA91PbqzuYberVdNwF2bATaWsZD_055U")
-ADMIN_USERNAME = "@oqoscode"
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "1254694557")
+TOKEN = os.getenv("TOKEN", "7996047867:AAG0diMuw5uhqGUVSYNcUPAst8hm2R_G47Q")
+ADMIN_USERNAME = "@Tyezik"
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "1863110558")
 
 # Список товаров, лиги, цвета, шрифты
 PRODUCTS = [
@@ -109,7 +109,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                 username = user.id
                 requisites_message = apply_style(
                     f"Вы выбрали: {product['name']} - {product['price']}\n\nРеквизиты:\n"
-                    f"@oqoscode (пишите только по делу, прошу не спамить, могу не отвечать)\n"
+                    f"@Tyezik (пишите только по делу, прошу не спамить, могу не отвечать)\n"
                     "Ссылка на FunPay: https://funpay.com/users/15119175\n"
                     "Ссылка на https://www.donationalerts.com/r/makarovbyshop\n"
                     "(прошу отправляйте точную сумму и в комментарий поясните за что платите, "
@@ -252,9 +252,11 @@ app = Flask(__name__)
 
 # Инициализация бота
 application = Application.builder().token(TOKEN).build()
+is_initialized = False
 
 
 async def initialize_and_set_webhook():
+    global is_initialized
     await application.initialize()
     logger.info("Application initialized successfully")
     WEBHOOK_URL = os.getenv("WEBHOOK_URL")
@@ -263,6 +265,7 @@ async def initialize_and_set_webhook():
         raise ValueError("Необходимо задать WEBHOOK_URL в переменных окружения.")
     logger.info(f"Установка вебхука: {WEBHOOK_URL}")
     await application.bot.set_webhook(url=WEBHOOK_URL)
+    is_initialized = True
 
 
 # Регистрация обработчиков
@@ -274,6 +277,10 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_g
 # Обработчик вебхука
 @app.route('/webhook', methods=['POST'])
 async def webhook():
+    global is_initialized
+    if not is_initialized:
+        logger.warning("Application not initialized yet, initializing now...")
+        await initialize_and_set_webhook()
     logger.info("Получен POST-запрос на /webhook")
     data = request.get_json()
     logger.info(f"Данные от Telegram: {data}")
