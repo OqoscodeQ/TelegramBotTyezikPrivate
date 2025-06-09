@@ -29,8 +29,7 @@ PRODUCTS = [
 LEAGUES = ["Бронза", "Серебро", "Золото", "Алмаз", "Мифик"]
 COMMENTS = {
     "win": ["Отличная интуиция! 🎉 Ты угадал лигу!", "Ты мастер предсказаний! 💪", "Потрясающе! Ты попал в цель! 😎"],
-    "lose": ["Увы, не угадал! 😂 К сожалению, у тебя была только одна попытка!",
-             "Почти получилось! 😅 Но у тебя была только одна попытка!",
+    "lose": ["Увы, не угадал! 😂 К сожалению, у тебя была только одна попытка!", "Почти получилось! 😅 Но у тебя была только одна попытка!",
              "Не повезло на этот раз! У тебя была только одна попытка!"]
 }
 
@@ -52,7 +51,6 @@ FONTS = {
     "fancy": lambda x: "".join(chr(ord(c) + 0x1D400) if c.isalpha() else c for c in x)
 }
 
-
 # Уведомление администратору
 async def notify_admin(context, message):
     try:
@@ -63,7 +61,6 @@ async def notify_admin(context, message):
         logger.info(f"Уведомление админу отправлено: {message}")
     except TelegramError as e:
         logger.error(f"Ошибка при отправке уведомления админу: {e}")
-
 
 # Обработчики
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -81,7 +78,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(welcome_message, reply_markup=reply_markup, parse_mode='HTML')
     logger.info("Команда /start выполнена")
 
-
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     logger.info(f"Получен callback: {query.data} от {query.from_user.id}")
@@ -90,13 +86,11 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if query.data == 'catalog':
             await query.message.reply_text("📋 Мои услуги:", parse_mode='HTML')
             for i, product in enumerate(PRODUCTS, 1):
-                message = apply_style(f"{i}. {product['name']} - {product['price']}", context.user_data,
-                                      query.from_user.id)
+                message = apply_style(f"{i}. {product['name']} - {product['price']}", context.user_data, query.from_user.id)
                 keyboard = [[InlineKeyboardButton("Выбрать", callback_data=f"product_{i}")]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 try:
-                    await query.message.reply_photo(photo=product['image'], caption=message, reply_markup=reply_markup,
-                                                    parse_mode='HTML')
+                    await query.message.reply_photo(photo=product['image'], caption=message, reply_markup=reply_markup, parse_mode='HTML')
                 except TelegramError as e:
                     logger.error(f"Ошибка при отправке фото для {product['name']}: {e}")
                     await query.message.reply_text(message, reply_markup=reply_markup, parse_mode='HTML')
@@ -118,8 +112,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                     context.user_data, user.id
                 )
                 await query.message.reply_text(requisites_message, parse_mode='HTML')
-                await notify_admin(context,
-                                   f"🔔 Новый заказ! Пользователь {username} выбрал: {product['name']} - {product['price']}. Проверь!")
+                await notify_admin(context, f"🔔 Новый заказ! Пользователь {username} выбрал: {product['name']} - {product['price']}. Проверь!")
                 logger.info(f"Уведомление отправлено админу о выборе {product['name']} пользователем {username}")
             else:
                 await query.message.reply_text("Ошибка: выбран некорректный товар.", parse_mode='HTML')
@@ -136,22 +129,19 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             user_id = query.from_user.id
             context.user_data[f'color_{user_id}'] = color
             logger.info(f"Сохранён цвет {color} для user_id {user_id}")
-            await query.message.reply_text(apply_style("Цвет интерфейса изменён!", context.user_data, user_id),
-                                           parse_mode='HTML')
+            await query.message.reply_text(apply_style("Цвет интерфейса изменён!", context.user_data, user_id), parse_mode='HTML')
 
         elif query.data.startswith('font_'):
             font = query.data.split('_')[1]
             user_id = query.from_user.id
             context.user_data[f'font_{user_id}'] = font
             logger.info(f"Сохранён шрифт {font} для user_id {user_id}")
-            await query.message.reply_text(apply_style("Шрифт интерфейса изменён!", context.user_data, user_id),
-                                           parse_mode='HTML')
+            await query.message.reply_text(apply_style("Шрифт интерфейса изменён!", context.user_data, user_id), parse_mode='HTML')
 
     except TelegramError as e:
         logger.error(f"Ошибка Telegram API: {e}")
         await query.message.reply_text("Произошла ошибка, попробуйте позже.", parse_mode='HTML')
         await notify_admin(context, f"Telegram API Error: {e}")
-
 
 async def start_rang(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"Получена команда /start_rang от {query.from_user.id}")
@@ -159,9 +149,7 @@ async def start_rang(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     username = query.from_user.username if query.from_user.username else str(user_id)
     chat_id = query.message.chat.id
     if context.user_data.get(f'played_{user_id}'):
-        await context.bot.send_message(chat_id=chat_id, text=apply_style(
-            "Извините, но вы уже пытали удачу! У вас была только одна попытка.", context.user_data, user_id),
-                                       parse_mode='HTML')
+        await context.bot.send_message(chat_id=chat_id, text=apply_style("Извините, но вы уже пытали удачу! У вас была только одна попытка.", context.user_data, user_id), parse_mode='HTML')
         return
     context.user_data['correct_league'] = random.choice(LEAGUES)
     await context.bot.send_message(
@@ -177,7 +165,6 @@ async def start_rang(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     context.user_data['game_active'] = True
     logger.info(f"Игра 'Угадай лигу' начата для {username}. Загадана лига: {context.user_data['correct_league']}")
 
-
 async def handle_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"Получен ответ на игру от {update.effective_user.id}: {update.message.text}")
     if context.user_data.get('game_active'):
@@ -187,9 +174,7 @@ async def handle_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         correct_league = context.user_data.get('correct_league')
         if correct_league is None:
             logger.error(f"correct_league не определён для {username}")
-            await update.message.reply_text(
-                apply_style("Игра не была начата корректно. Попробуй снова с /start_rang.", context.user_data, user_id),
-                parse_mode='HTML')
+            await update.message.reply_text(apply_style("Игра не была начата корректно. Попробуй снова с /start_rang.", context.user_data, user_id), parse_mode='HTML')
             return
         result = user_guess == correct_league
         discount_message = ""
@@ -208,24 +193,20 @@ async def handle_guess(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         context.user_data[f'played_{user_id}'] = True
         logger.info(f"Игра 'Угадай лигу' завершена для {username}. Угадал: {result}, Токен: {discount_message}")
     else:
-        await update.message.reply_text(
-            apply_style("Извините, но вы уже пытали удачу! У вас была только одна попытка.", context.user_data,
-                        user_id), parse_mode='HTML')
-
+        await update.message.reply_text(apply_style("Извините, но вы уже пытали удачу! У вас была только одна попытка.", context.user_data, user_id), parse_mode='HTML')
 
 async def settings(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info(f"Получена команда /settings от {query.from_user.id}")
     color_buttons = []
     for color_key in COLORS.keys():
-        color_buttons.append(
-            InlineKeyboardButton(f"{COLORS[color_key]} {color_key}", callback_data=f"color_{color_key}"))
-    color_rows = [color_buttons[i:i + 2] for i in range(0, len(color_buttons), 2)]
-
+        color_buttons.append(InlineKeyboardButton(f"{COLORS[color_key]} {color_key}", callback_data=f"color_{color_key}"))
+    color_rows = [color_buttons[i:i+2] for i in range(0, len(color_buttons), 2)]
+    
     font_buttons = []
     for font_key in FONTS.keys():
         font_buttons.append(InlineKeyboardButton(f"Шрифт: {font_key}", callback_data=f"font_{font_key}"))
-    font_rows = [font_buttons[i:i + 2] for i in range(0, len(font_buttons), 2)]
-
+    font_rows = [font_buttons[i:i+2] for i in range(0, len(font_buttons), 2)]
+    
     settings_keyboard = color_rows + font_rows
     reply_markup = InlineKeyboardMarkup(settings_keyboard)
     await context.bot.send_message(
@@ -236,7 +217,6 @@ async def settings(query, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     logger.info("Меню настроек показано")
 
-
 def apply_style(text, user_data, user_id):
     color = user_data.get(f'color_{user_id}', 'red')
     font_key = user_data.get(f'font_{user_id}', 'normal')
@@ -246,19 +226,20 @@ def apply_style(text, user_data, user_id):
     styled_text = f"{color_emoji} {font_func(text)}"
     return styled_text
 
-
 # Настройка Flask
 app = Flask(__name__)
 
 # Инициализация бота
 application = Application.builder().token(TOKEN).build()
-application.initialize()  # Добавляем инициализацию приложения
+
+async def initialize_application():
+    await application.initialize()  # Асинхронная инициализация
+    logger.info("Application initialized successfully")
 
 # Регистрация обработчиков
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CallbackQueryHandler(button_callback))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_guess))
-
 
 # Обработчик вебхука
 @app.route('/webhook', methods=['POST'])
@@ -271,9 +252,11 @@ async def webhook():
     logger.info("Обработка обновления завершена")
     return 'OK', 200
 
-
 # Запуск бота
 if __name__ == "__main__":
+    # Инициализация приложения
+    asyncio.run(initialize_application())
+    
     # Установка вебхука с URL из переменной окружения
     WEBHOOK_URL = os.getenv("WEBHOOK_URL")
     if not WEBHOOK_URL:
@@ -281,7 +264,7 @@ if __name__ == "__main__":
         raise ValueError("Необходимо задать WEBHOOK_URL в переменных окружения.")
     logger.info(f"Установка вебхука: {WEBHOOK_URL}")
     asyncio.run(application.bot.set_webhook(url=WEBHOOK_URL))
-
+    
     # Запуск Flask с динамическим портом
     port = int(os.getenv("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
