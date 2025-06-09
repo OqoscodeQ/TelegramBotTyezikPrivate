@@ -1,7 +1,8 @@
 import logging
 import os
 import asyncio
-from telegram import Update
+import random  # Импорт модуля random
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup  # Импорт необходимых классов
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 from telegram.error import TelegramError
 from flask import Flask, request
@@ -11,9 +12,9 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Токен бота и данные админа
-TOKEN = os.getenv("TOKEN", "7833966397:AAEwA91PbqzuYberVdNwF2bATaWsZD_055U")  # Новый токен
+TOKEN = os.getenv("TOKEN", "7833966397:AAEwA91PbqzuYberVdNwF2bATaWsZD_055U")  # Твой новый токен
 ADMIN_USERNAME = "@oqoscode"  # Твой профиль
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")  # Будет взято из переменной окружения, если задано
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "1254694557")  # Твой chat_id
 
 # Список товаров, лиги, цвета, шрифты
 PRODUCTS = [
@@ -132,7 +133,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         elif query.data.startswith('color_'):
             color = query.data.split('_')[1]
-            user_id = query.from_user.id
+            user_id = query.from_user.id  # Исправлено на query.from_user.id
             context.user_data[f'color_{user_id}'] = color
             logger.info(f"Сохранён цвет {color} для user_id {user_id}")
             await query.message.reply_text(apply_style("Цвет интерфейса изменён!", context.user_data, user_id),
@@ -140,7 +141,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
         elif query.data.startswith('font_'):
             font = query.data.split('_')[1]
-            user_id = query.from_user.id
+            user_id = query.from_user.id  # Исправлено на query.from_user.id
             context.user_data[f'font_{user_id}'] = font
             logger.info(f"Сохранён шрифт {font} для user_id {user_id}")
             await query.message.reply_text(apply_style("Шрифт интерфейса изменён!", context.user_data, user_id),
@@ -269,7 +270,7 @@ async def webhook():
 # Запуск бота
 if __name__ == "__main__":
     # Установка вебхука с URL из переменной окружения
-    WEBHOOK_URL = os.getenv("https://telegrambottyezikprivate.onrender.com/webhook")
+    WEBHOOK_URL = os.getenv("WEBHOOK_URL")
     if not WEBHOOK_URL:
         logger.error("WEBHOOK_URL не задан в переменных окружения!")
         raise ValueError("Необходимо задать WEBHOOK_URL в переменных окружения.")

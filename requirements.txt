@@ -1,2 +1,5 @@
 python-telegram-bot==20.7
 flask==3.0.3
+git add telegram_bot.py requirements.txt
+git commit -m
+git push origin main
